@@ -9,11 +9,11 @@ Developed for the Newtonite Software Engineering Challenge.
 
 - **Task Management:** Create and view tasks.
 - **Status Tracking:** Update tasks from Open to In Progress and Resolved.
-- **Task Details:** Support task titles, projects, priorities, and assignees.
+- **Task Details:** Manage task titles, projects, priorities, and assignees.
 - **REST API:** Connect the frontend to the backend using API endpoints.
 - **Input Validation:** Validate incoming data and return appropriate HTTP status codes.
 - **SQLite Database:** Store task information locally.
-- **Automated Testing:** Test backend API behavior using Node.js test runner and Supertest.
+- **Automated Testing:** Test backend API behavior using the Node.js test runner and Supertest.
 - **Responsive Dashboard:** Interactive frontend built with React and Vite.
 
 ## Technology Stack
@@ -47,46 +47,49 @@ OpsFlow/
 ### Prerequisites
 
 - Node.js and npm installed
-- Git installed (optional, for cloning)
+- Git installed (optional, for cloning the repository)
 
-### 1. Clone the repository
+### 1. Clone the Repository
 
 ```bash
 git clone https://github.com/sonampatel7307-eng/OpsFlow.git
 cd OpsFlow
 ```
 
-### 2. Install frontend dependencies
+### 2. Install Frontend Dependencies
 
-Run from the project root:
+Run this command from the project root, where the root `package.json` is located:
 
 ```bash
 npm install
 ```
 
-### 3. Install backend dependencies
+### 3. Install Backend Dependencies
+
+From the project root, run:
 
 ```bash
 cd server
 npm install
 ```
 
-### 4. Start the backend
+### 4. Start the Backend
 
-From the `server` directory:
+Run this command from the `server` directory:
 
 ```bash
 npm start
 ```
 
-Keep the backend terminal open.
+Keep the backend terminal open while using the application.
 
-### 5. Start the frontend
+### 5. Start the Frontend
 
-Open a second terminal and navigate to the project root:
+Open a second terminal and navigate to the project root (the folder containing the root `package.json`).
+
+Run:
 
 ```bash
-cd "C:\Users\sonam\OneDrive\Desktop\Hello\operations-under-pressure"
 npm run dev
 ```
 
@@ -105,7 +108,7 @@ The backend uses port `5000` in the current development setup.
 
 ## Run Backend Tests
 
-From the `server` directory:
+From the `server` directory, run:
 
 ```bash
 npm test
@@ -121,6 +124,8 @@ Run these commands from the project root:
 npm run lint
 npm run build
 ```
+
+These commands check code quality and verify that the frontend production build completes successfully.
 
 ## Engineering Considerations
 
@@ -143,6 +148,8 @@ npm run build
 **Sonam Patel**
 
 GitHub: https://github.com/sonampatel7307-eng
+
+Project Repository: https://github.com/sonampatel7307-eng/OpsFlow
 
 ## License
 

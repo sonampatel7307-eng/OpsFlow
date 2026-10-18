@@ -19,6 +19,7 @@ function App() {
   async function loadTasks() {
     try {
       setError('')
+
       const response = await fetch(API_URL)
 
       if (!response.ok) {
@@ -27,7 +28,7 @@ function App() {
 
       const data = await response.json()
       setTasks(data)
-    } catch (err) {
+    } catch {
       setError(
         'Backend se connection nahi ho raha. Check karo ki server port 5000 par chal raha hai.'
       )
@@ -36,8 +37,39 @@ function App() {
     }
   }
 
+  // Load initial tasks without setting state directly inside the effect
   useEffect(() => {
-    loadTasks()
+    const controller = new AbortController()
+
+    async function fetchInitialTasks() {
+      try {
+        const response = await fetch(API_URL, {
+          signal: controller.signal,
+        })
+
+        if (!response.ok) {
+          throw new Error('Could not load tasks.')
+        }
+
+        const data = await response.json()
+        setTasks(data)
+        setError('')
+      } catch (error) {
+        if (error.name !== 'AbortError') {
+          setError(
+            'Backend se connection nahi ho raha. Check karo ki server port 5000 par chal raha hai.'
+          )
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setLoading(false)
+        }
+      }
+    }
+
+    fetchInitialTasks()
+
+    return () => controller.abort()
   }, [])
 
   const filteredTasks = tasks.filter((task) => {
@@ -117,7 +149,7 @@ function App() {
       )
     } catch (err) {
       setError(err.message || 'Status update nahi hua.')
-      loadTasks()
+      await loadTasks()
     }
   }
 
@@ -147,7 +179,7 @@ function App() {
         <div className="menu-label">WORKSPACE</div>
 
         <button
-          className="nav-item active"
+          className={`nav-item ${filter === 'All' ? 'active' : ''}`}
           onClick={() => setFilter('All')}
         >
           ▦ <span>Dashboard</span>
@@ -161,21 +193,21 @@ function App() {
         </button>
 
         <button
-          className="nav-item"
+          className={`nav-item ${filter === 'Open' ? 'active' : ''}`}
           onClick={() => setFilter('Open')}
         >
           ◷ <span>Open Tasks</span>
         </button>
 
         <button
-          className="nav-item"
+          className={`nav-item ${filter === 'In Progress' ? 'active' : ''}`}
           onClick={() => setFilter('In Progress')}
         >
           ↻ <span>In Progress</span>
         </button>
 
         <button
-          className="nav-item"
+          className={`nav-item ${filter === 'Resolved' ? 'active' : ''}`}
           onClick={() => setFilter('Resolved')}
         >
           ✓ <span>Resolved</span>
@@ -338,9 +370,7 @@ function App() {
                 <span>In progress</span>
                 <span className="stat-icon blue">↻</span>
               </div>
-              <div className="stat-number">
-                {progressCount}
-              </div>
+              <div className="stat-number">{progressCount}</div>
               <div className="stat-foot">
                 Currently being worked on
               </div>
@@ -351,9 +381,7 @@ function App() {
                 <span>Resolved</span>
                 <span className="stat-icon green">✓</span>
               </div>
-              <div className="stat-number">
-                {resolvedCount}
-              </div>
+              <div className="stat-number">{resolvedCount}</div>
               <div className="stat-foot">
                 Successfully completed
               </div>

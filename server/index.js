@@ -1,12 +1,14 @@
-
 const express = require("express");
 const cors = require("cors");
 const Database = require("better-sqlite3");
+const path = require("node:path");
 
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 
-const db = new Database("tasks.db");
+// Tests can use a separate database via DB_PATH.
+const dbPath = process.env.DB_PATH || path.join(__dirname, "tasks.db");
+const db = new Database(dbPath);
 
 app.use(cors());
 app.use(express.json());
@@ -24,32 +26,36 @@ app.get("/api/tasks", (req, res) => {
       .all();
 
     res.json(tasks);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+  } catch {
+    res.status(500).json({ error: "Unable to fetch tasks" });
   }
 });
 
-// Create a new task
+// Create a task
 app.post("/api/tasks", (req, res) => {
   const {
     title,
     project = "Operations",
     priority = "Medium",
     assignee = "Sonam Patel",
-  } = req.body;
+  } = req.body || {};
 
   if (typeof title !== "string" || !title.trim()) {
-    return res.status(400).json({
-      error: "Task title is required",
-    });
+    return res.status(400).json({ error: "Task title is required" });
+  }
+
+  if (
+    typeof project !== "string" ||
+    !project.trim() ||
+    typeof assignee !== "string"
+  ) {
+    return res.status(400).json({ error: "Invalid project or assignee" });
   }
 
   const allowedPriorities = ["Low", "Medium", "High"];
 
   if (!allowedPriorities.includes(priority)) {
-    return res.status(400).json({
-      error: "Invalid priority",
-    });
+    return res.status(400).json({ error: "Invalid priority" });
   }
 
   try {
@@ -62,11 +68,9 @@ app.post("/api/tasks", (req, res) => {
       .run(
         title.trim(),
         0,
-        project,
+        project.trim(),
         priority,
-        typeof assignee === "string" && assignee.trim()
-          ? assignee.trim()
-          : "Sonam Patel",
+        assignee.trim() || "Sonam Patel",
         "Open"
       );
 
@@ -74,21 +78,19 @@ app.post("/api/tasks", (req, res) => {
       .prepare("SELECT * FROM tasks WHERE id = ?")
       .get(result.lastInsertRowid);
 
-    res.status(201).json(task);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+    return res.status(201).json(task);
+  } catch {
+    return res.status(500).json({ error: "Unable to create task" });
   }
 });
 
 // Update task status
 app.patch("/api/tasks/:id", (req, res) => {
   const id = Number(req.params.id);
-  const { status, completed } = req.body;
+  const { status, completed } = req.body || {};
 
   if (!Number.isInteger(id) || id <= 0) {
-    return res.status(400).json({
-      error: "Invalid task ID",
-    });
+    return res.status(400).json({ error: "Invalid task ID" });
   }
 
   let newStatus;
@@ -97,9 +99,7 @@ app.patch("/api/tasks/:id", (req, res) => {
     const allowedStatuses = ["Open", "In Progress", "Resolved"];
 
     if (!allowedStatuses.includes(status)) {
-      return res.status(400).json({
-        error: "Invalid status",
-      });
+      return res.status(400).json({ error: "Invalid status" });
     }
 
     newStatus = status;
@@ -111,34 +111,39 @@ app.patch("/api/tasks/:id", (req, res) => {
     });
   }
 
-  const isCompleted = newStatus === "Resolved" ? 1 : 0;
-
   try {
-    const result = db
-      .prepare(`
-        UPDATE tasks
-        SET status = ?, completed = ?
-        WHERE id = ?
-      `)
-      .run(newStatus, isCompleted, id);
+    // Check existence separately: unchanged updates are still valid.
+    const existing = db
+      .prepare("SELECT id FROM tasks WHERE id = ?")
+      .get(id);
 
-    if (result.changes === 0) {
-      return res.status(404).json({
-        error: "Task not found",
-      });
+    if (!existing) {
+      return res.status(404).json({ error: "Task not found" });
     }
+
+    const isCompleted = newStatus === "Resolved" ? 1 : 0;
+
+    db.prepare(`
+      UPDATE tasks
+      SET status = ?, completed = ?
+      WHERE id = ?
+    `).run(newStatus, isCompleted, id);
 
     const task = db
       .prepare("SELECT * FROM tasks WHERE id = ?")
       .get(id);
 
-    res.json(task);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+    return res.json(task);
+  } catch {
+    return res.status(500).json({ error: "Unable to update task" });
   }
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
-});
+// Only start listening when this file is run directly.
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Server running at http://localhost:${PORT}`);
+  });
+}
+
+module.exports = { app, db };
